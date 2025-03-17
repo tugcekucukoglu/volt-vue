@@ -26,14 +26,37 @@ Volt CLI significantly reduces the development time needed to incorporate UI com
 
 Whether you're building a new project or enhancing an existing application, Volt CLI makes it easy to leverage PrimeVue's professional UI components without disrupting your development workflow.
 
-Usage: volt-vue [options] [component]
+## Installation
 
-initialize your project and install dependencies
+You can use Volt-Vue directly with npx without installing it globally:
 
-Arguments:
-components the components to add or a url to the component.
+```bash
+npx volt-vue [command] [options]
+```
 
-Options:
+### Commands
 
---no-src-dir do not use the src directory when creating a new project.
--h, --help display help for command
+#### Add Components
+
+Add components to your Vue project:
+
+```bash
+npx volt-vue add [components]
+```
+
+Add all Volt components to your Vue project:
+
+```bash
+npx volt-vue add all
+```
+
+#### Options
+
+| Option                 | Description                                             |
+| ---------------------- | ------------------------------------------------------- |
+| `--no-src-dir`         | Install to root directory instead of src directory      |
+| `--outdir <directory>` | Specify output directory (overrides src-dir option)     |
+| `--no-deps`            | Don't automatically install dependencies                |
+| `--verbose`            | Show detailed error messages and additional information |
+| `-v, --version`        | Output the current version                              |
+| `--help`               | Display help for command                                |
