@@ -1,6 +1,6 @@
 {
     "name": "volt-vue",
-    "version": "0.0.0-alpha.2",
+    "version": "0.0.0-alpha.3",
     "description": "A command-line tool for easily adding PrimeVue Volt UI components to your project, allowing developers to quickly integrate high-quality, ready-to-use UI components with minimal setup.",
     "type": "module",
     "main": "dist/index.js",
