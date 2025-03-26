@@ -53,12 +53,12 @@ export async function add(components: string[], options: CommandOptions) {
             return;
         }
 
-        const voltUtilsDir = path.join(voltSourceDir, "utils");
-        const targetUtilsDir = path.join(voltDir, "utils");
+        const utilsPath = path.join(voltSourceDir, "utils.ts");
+        const targetUtilsPath = path.join(voltDir, "utils.ts");
 
-        if (fs.existsSync(voltUtilsDir)) {
+        if (fs.existsSync(utilsPath)) {
             fs.ensureDirSync(voltDir);
-            fs.copySync(voltUtilsDir, targetUtilsDir);
+            fs.copySync(utilsPath, targetUtilsPath);
         } else {
             console.warn(`⚠️ Utils folder not found in the repository.`);
         }
@@ -68,22 +68,36 @@ export async function add(components: string[], options: CommandOptions) {
         const processedComponents = new Set<string>();
         const componentsToProcess = [...components];
         const dependencyMap = new Map<string, Set<string>>();
+        const componentFileMap = new Map<string, string>();
+        const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-        const copyFullComponent = (component: string): boolean => {
+        const copyComponent = (component: string): boolean => {
             if (processedComponents.has(component)) return true;
 
-            const voltComponentDir = path.join(voltSourceDir, component);
-            if (!fs.existsSync(voltComponentDir)) {
-                console.error(`❌ Component ${component} not found!`);
-                return false;
+            let componentFile = `${capitalize(component)}.vue`;
+            let voltComponentPath = path.join(voltSourceDir, componentFile);
+
+            if (!fs.existsSync(voltComponentPath)) {
+                const files = fs.readdirSync(voltSourceDir);
+                const matchingFile = files.find((file) => file.toLowerCase() === `${component.toLowerCase()}.vue`);
+
+                if (matchingFile) {
+                    componentFile = matchingFile;
+                    voltComponentPath = path.join(voltSourceDir, componentFile);
+                } else {
+                    console.error(`❌ Component ${component} not found!`);
+                    return false;
+                }
             }
 
-            const targetComponentDir = path.join(voltDir, component);
-            fs.ensureDirSync(path.dirname(targetComponentDir));
-            fs.copySync(voltComponentDir, targetComponentDir);
+            componentFileMap.set(component.toLowerCase(), componentFile);
+
+            const targetComponentPath = path.join(voltDir, componentFile);
+            fs.ensureDirSync(path.dirname(targetComponentPath));
+            fs.copySync(voltComponentPath, targetComponentPath);
 
             processedComponents.add(component);
-            logVerbose(`📌 Copied full component: ${component}`);
+            logVerbose(`📌 Copied component: ${component} (${componentFile})`);
 
             return true;
         };
@@ -94,31 +108,35 @@ export async function add(components: string[], options: CommandOptions) {
                 return;
             }
 
-            const indexPath = path.join(voltSourceDir, component, "index.vue");
-            if (!fs.existsSync(indexPath)) return;
+            const componentFile = componentFileMap.get(component.toLowerCase()) || `${capitalize(component)}.vue`;
+            const componentPath = path.join(voltSourceDir, componentFile);
 
-            const content = fs.readFileSync(indexPath, "utf8");
+            if (!fs.existsSync(componentPath)) return;
 
-            const importRegex = /import\s+(?:[\w\s{},*]+)\s+from\s+['"]\.\.\/([^'"\/]+)(?:\/[^'"]+)?['"]/g;
+            const content = fs.readFileSync(componentPath, "utf8");
+            const importRegex = /import\s+(?:[\w\s{},*]+)\s+from\s+['"]\.\/([\w]+)(?:\.vue)?['"]/g;
+            const dependencies = new Set<string>();
             let match;
 
-            const dependencies = new Set<string>();
-
             while ((match = importRegex.exec(content)) !== null) {
-                const dependencyComponent = match[1];
+                const exactDependencyName = match[1];
 
-                if (dependencyComponent === "utils") continue;
+                if (exactDependencyName === "utils") continue;
 
-                dependencies.add(dependencyComponent);
+                if (!componentFileMap.has(exactDependencyName)) {
+                    componentFileMap.set(exactDependencyName, `${exactDependencyName}.vue`);
+                }
 
-                if (components.includes(dependencyComponent)) continue;
+                dependencies.add(exactDependencyName);
+
+                if (components.includes(exactDependencyName)) continue;
 
                 if (
-                    !processedComponents.has(dependencyComponent) &&
-                    !componentsToProcess.includes(dependencyComponent)
+                    !processedComponents.has(exactDependencyName) &&
+                    !componentsToProcess.includes(exactDependencyName)
                 ) {
-                    logVerbose(`📌 Found dependency in ${component}: ${dependencyComponent}`);
-                    componentsToProcess.push(dependencyComponent);
+                    logVerbose(`📌 Found dependency in ${component}: ${exactDependencyName}`);
+                    componentsToProcess.push(exactDependencyName);
                 }
             }
 
@@ -130,7 +148,7 @@ export async function add(components: string[], options: CommandOptions) {
         while (componentsToProcess.length > 0) {
             const component = componentsToProcess.shift()!;
 
-            if (copyFullComponent(component)) {
+            if (copyComponent(component)) {
                 if (components.includes(component)) {
                     successCount++;
                 }
