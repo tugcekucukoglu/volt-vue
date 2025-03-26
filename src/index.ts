@@ -6,7 +6,7 @@ import { add } from "./commands/add";
 program
     .name("volt-vue")
     .description("Add PrimeVue Volt components to your project")
-    .version("0.0.0-alpha.3", "-v, --version", "Output the current version")
+    .version("0.0.0-alpha.4", "-v, --version", "Output the current version")
     .option("--verbose", "Show detailed error messages");
 
 program
